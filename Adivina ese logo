@@ -1,0 +1,78 @@
+-- Crear la interfaz de usuario
+local screenGui = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
+local textLabel = Instance.new("TextLabel", screenGui)
+local copyButton = Instance.new("TextButton", screenGui)
+
+screenGui.Name = "DoorNotifier"
+textLabel.Name = "DoorText"
+copyButton.Name = "CopyButton"
+
+textLabel.Size = UDim2.new(0.3, 0, 0.05, 0)
+textLabel.Position = UDim2.new(0.35, 0, 0.9, 0)
+textLabel.BackgroundTransparency = 0.5
+textLabel.Text = ""
+textLabel.TextScaled = true
+textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+textLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+
+copyButton.Size = UDim2.new(0.1, 0, 0.05, 0)
+copyButton.Position = UDim2.new(0.65, 0, 0.9, 0)
+copyButton.BackgroundTransparency = 0.5
+copyButton.Text = "Copy"
+copyButton.TextScaled = true
+copyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+copyButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+
+-- Funcionalidad para copiar al portapapeles
+copyButton.MouseButton1Click:Connect(function()
+    if setclipboard then
+        setclipboard(textLabel.Text)
+    end
+end)
+
+-- Script para detectar la puerta más cercana
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local categoriesFolder = game.Workspace.workspaceFolder.categories
+
+local function getNearestDoor()
+    local nearestDoor = nil
+    local shortestDistance = math.huge
+
+    for _, category in pairs(categoriesFolder:GetChildren()) do
+        for _, door in pairs(category:GetChildren()) do
+            if door:IsA("Model") then
+                local distance = (door.PrimaryPart.Position - character.HumanoidRootPart.Position).Magnitude
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    nearestDoor = door
+                end
+            end
+        end
+    end
+
+    return nearestDoor
+end
+
+local function updateDoorName()
+    while true do
+        local nearestDoor = getNearestDoor()
+        if nearestDoor then
+            textLabel.Text = nearestDoor.Name
+        else
+            textLabel.Text = ""
+        end
+        wait(0.1)
+    end
+end
+
+-- Asegurarse de que cada puerta tenga una PrimaryPart
+for _, category in pairs(categoriesFolder:GetChildren()) do
+    for _, door in pairs(category:GetChildren()) do
+        if door:IsA("Model") and not door.PrimaryPart then
+            door.PrimaryPart = door:FindFirstChild("VoiceDoor") or door:FindFirstChildWhichIsA("BasePart")
+        end
+    end
+end
+
+spawn(updateDoorName)
